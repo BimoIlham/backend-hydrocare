@@ -3,7 +3,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     """Konfigurasi aplikasi dari file .env"""
-    openweather_api_key: str
+    openweather_api_key: str = ""
     database_url: str = "sqlite:///./hydrocare.db"
     secret_key: str = "hydrocare-dev-secret"
     city_default: str = "Bandar Lampung"
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
 # Instance tunggal (singleton pattern)
 settings = Settings()
