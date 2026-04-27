@@ -88,3 +88,20 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/debug/config")
+def debug_config():
+    """Diagnostic endpoint to check env vars (safe, no secrets exposed)."""
+    db_url = settings.database_url
+    # Mask password in DB URL
+    if "@" in db_url:
+        parts = db_url.split("@")
+        db_url = "***@" + parts[-1]
+    return {
+        "database_url_set": bool(settings.database_url and settings.database_url != "sqlite:///./hydrocare.db"),
+        "database_url_masked": db_url,
+        "allowed_origins": origins,
+        "openweather_key_set": bool(settings.openweather_api_key),
+        "supabase_url_set": bool(settings.supabase_url),
+        "gemini_key_set": bool(settings.gemini_api_key),
+    }
