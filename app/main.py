@@ -58,6 +58,10 @@ app = FastAPI(
 origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
 logger.info(f"🌐 CORS allowed origins: {origins}")
 
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import traceback
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -66,6 +70,15 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global exception: {exc}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}", "traceback": traceback.format_exc()},
+    )
 
 # Daftarkan semua router
 app.include_router(auth.router)
