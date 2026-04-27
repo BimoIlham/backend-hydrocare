@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./hydrocare.db"
     secret_key: str = "hydrocare-dev-secret"
     city_default: str = "Bandar Lampung"
-    allowed_origins: str = "http://localhost:5173"
+    allowed_origins: str = "http://localhost:5173,https://frontend-hydrocare.vercel.app"
     
     # Supabase config (optional)
     supabase_url: Optional[str] = None
