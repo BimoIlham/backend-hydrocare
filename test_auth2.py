@@ -3,7 +3,7 @@ import urllib.request
 import urllib.error
 import json
 
-url = "http://localhost:8000/api/auth/register"
+url = "https://backend-hydrocare.vercel.app/api/auth/register"
 data = {
     "username": "test1234",
     "password": "password123",

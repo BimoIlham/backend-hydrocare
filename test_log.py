@@ -3,7 +3,7 @@ import urllib.request
 import urllib.error
 import json
 
-url = "http://localhost:8000/api/history/log"
+url = "https://backend-hydrocare.vercel.app/api/history/log"
 data = {
     "amount_ml": 250,
     "log_date": "2026-04-26",
