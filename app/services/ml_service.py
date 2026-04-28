@@ -9,12 +9,11 @@ Model yang dilatih:
 
 import os
 import logging
-import pandas as pd
+import csv
 import numpy as np
 import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (
     r2_score,
     mean_absolute_error,
@@ -62,17 +61,29 @@ def _ensure_model_dir():
     os.makedirs(MODEL_DIR, exist_ok=True)
 
 
-def _preprocess(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Encode kolom kategorikal → numerik.
-    """
-    df = df.copy()
-    df["Gender"] = df["Gender"].map(GENDER_MAP)
-    df["Physical Activity Level"] = df["Physical Activity Level"].map(ACTIVITY_MAP)
-    df["Weather"] = df["Weather"].map(WEATHER_MAP)
-    # Drop baris yang tidak ter-map (NaN)
-    df.dropna(inplace=True)
-    return df
+def _load_data_csv():
+    X_list, y_intake_list, y_hydration_list = [], [], []
+    with open(DATA_PATH, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                age = float(row['Age'])
+                gender = GENDER_MAP.get(row['Gender'])
+                weight = float(row['Weight (kg)'])
+                activity = ACTIVITY_MAP.get(row['Physical Activity Level'])
+                weather = WEATHER_MAP.get(row['Weather'])
+                intake = float(row['Daily Water Intake (liters)'])
+                hydration = 1 if row['Hydration Level'] == 'Good' else 0
+                
+                if None in (gender, activity, weather):
+                    continue
+                
+                X_list.append([age, gender, weight, activity, weather])
+                y_intake_list.append(intake)
+                y_hydration_list.append(hydration)
+            except (KeyError, ValueError):
+                continue
+    return np.array(X_list), np.array(y_intake_list), np.array(y_hydration_list)
 
 
 def train_models(force: bool = False) -> dict:
@@ -93,16 +104,8 @@ def train_models(force: bool = False) -> dict:
 
     # ──────── Load & preprocess ──────────
     logger.info(f"📂 Loading dataset dari {DATA_PATH}...")
-    df = pd.read_csv(DATA_PATH)
-    logger.info(f"   Dataset shape: {df.shape}")
-
-    df = _preprocess(df)
-    logger.info(f"   Setelah preprocessing: {df.shape}")
-
-    # Features & targets
-    X = df[FEATURE_COLS]
-    y_intake = df["Daily Water Intake (liters)"]
-    y_hydration = df["Hydration Level"].map({"Good": 1, "Poor": 0})
+    X, y_intake, y_hydration = _load_data_csv()
+    logger.info(f"   Dataset shape: {X.shape}")
 
     # Split data (80/20)
     X_train, X_test, y_intake_train, y_intake_test = train_test_split(
@@ -228,10 +231,8 @@ def predict_water_intake(
     activity_enc = ACTIVITY_MAP.get(activity, ACTIVITY_MAP.get(activity.capitalize(), 1))
     weather_enc = WEATHER_MAP.get(weather, WEATHER_MAP.get(weather.capitalize(), 1))
 
-    features = pd.DataFrame(
-        [[age, gender_enc, weight_kg, activity_enc, weather_enc]],
-        columns=FEATURE_COLS,
-    )
+    # Gunakan 2D array native untuk menghindari pandas dependency
+    features = [[age, gender_enc, weight_kg, activity_enc, weather_enc]]
     prediction = _regressor.predict(features)[0]
 
     # Clamp antara 1.0 dan 6.0 liter (batas wajar)
@@ -259,10 +260,8 @@ def predict_hydration_level(
     activity_enc = ACTIVITY_MAP.get(activity, ACTIVITY_MAP.get(activity.capitalize(), 1))
     weather_enc = WEATHER_MAP.get(weather, WEATHER_MAP.get(weather.capitalize(), 1))
 
-    features = pd.DataFrame(
-        [[age, gender_enc, weight_kg, activity_enc, weather_enc]],
-        columns=FEATURE_COLS,
-    )
+    # Gunakan 2D array native untuk menghindari pandas dependency
+    features = [[age, gender_enc, weight_kg, activity_enc, weather_enc]]
     prediction = _classifier.predict(features)[0]
     probabilities = _classifier.predict_proba(features)[0]
 
